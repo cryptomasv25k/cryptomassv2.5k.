@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GEΞKKARMA // Borgerøkonomi 2.0</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'glitch-primary': '#00ff00',
+                        'glitch-secondary': '#ff00ff',
+                        'glitch-accent': '#ffff00',
+                        'glitch-text': '#00ffff',
+                        'glitch-bg': '#111111',
+                    }
+                }
+            }
+        }
+
+        body {
+            background: #000;
+            font-family: 'Press Start 2P', monospace;
+            color: #00ffff;
+            image-rendering: pixelated;
+            overflow-x: hidden;
+        }
+
+        .glitch-input, .glitch-button {
+            font-family: 'Press Start 2P', monospace;
+        }
+
+        .glitch-input {
+            border: 3px solid #00ff00;
+            background: #111;
+            color: #00ffff;
+            box-shadow: 5px 5px 0 #ff00ff;
+            padding: 12px;
+            font-size: 12px;
+            transition: all 0.1s;
+        }
+
+        .glitch-input:focus {
+            outline: none;
+            box-shadow: 8px 8px 0 #ffff00, -3px -3px 0 #ff00ff;
+            animation: input-pulse 0.5s ease;
+        }
+
+        @keyframes input-pulse {
+            0%, 100% { border-color: #00ff00; }
+            50% { border-color: #ffff00; }
+        }
+
+        .glitch-button {
+            border: 4px solid #00ff00;
+            background: #111;
+            color: #00ffff;
+            box-shadow: 8px 8px 0 #ff00ff;
+            padding: 12px 20px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.1s;
+            user-select: none;
+        }
+
+        .glitch-button:hover:not(:disabled) {
+            box-shadow: 10px 10px 0 #ffff00;
+            transform: translate(-2px, -2px);
+            color: #ffff00;
+        }
+
+        .glitch-button:active:not(:disabled) {
+            box-shadow: 4px 4px 0 #ff00ff;
+            transform: translate(4px, 4px);
+        }
+
+        .glitch-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+            background: repeating-linear-gradient(
+                to bottom,
+                transparent 0,
+                transparent 1px,
+                rgba(0, 0, 0, 0.15) 1px,
+                rgba(0, 0, 0, 0.15) 2px
+            );
+            animation: scanline-flicker 0.1s infinite;
+        }
+
+        @keyframes scanline-flicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.95; }
+        }
+
+        #background-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.08;
+        }
+
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #111;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #00ff00;
+            border: 1px solid #ff00ff;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #ffff00;
+        }
+
+        .pixel-frame {
+            border: 4px solid #00ff00;
+            background: rgba(17, 17, 17, 0.98);
+            box-shadow: 8px 8px 0 #ff00ff;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pixel-frame::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, transparent 30%, rgba(0, 255, 0, 0.1) 50%, transparent 70%);
+            animation: frame-shine 3s infinite;
+            pointer-events: none;
+        }
+
+        @keyframes frame-shine {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .chat-message {
+            padding: 10px;
+            margin: 6px 0;
+            border-radius: 2px;
+            font-size: 11px;
+            line-height: 1.6;
+            word-wrap: break-word;
+        }
+
+        .chat-user {
+            background: rgba(255, 0, 255, 0.15);
+            border-left: 3px solid #ff00ff;
+            text-align: right;
+            animation: slide-in-right 0.3s ease;
+        }
+
+        .chat-ai {
+            background: rgba(0, 255, 0, 0.1);
+            border-left: 3px solid #00ff00;
+            animation: slide-in-left 0.3s ease;
+        }
+
+        @keyframes slide-in-right {
+            from { transform: translateX(20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes slide-in-left {
+            from { transform: translateX(-20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .typing-cursor::after {
+            content: '▮';
+            animation: blink 0.7s infinite;
+        }
+
+        @keyframes blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+
+        @keyframes title-glitch {
+            0%, 90% { 
+                text-shadow: 4px 4px 0 #ff00ff;
+            }
+            92% { 
+                text-shadow: -2px 2px 0 #ffff00, 4px -2px 0 #ff00ff;
+                transform: translate(2px, 0);
+            }
+            94% { 
+                text-shadow: 2px -2px 0 #00ff00, -4px 4px 0 #ffff00;
+                transform: translate(-2px, 0);
+            }
+            96%, 100% { 
+                text-shadow: 4px 4px 0 #ff00ff;
+                transform: translate(0, 0);
+            }
+        }
+
+        .title-glitch {
+            animation: title-glitch 5s infinite;
+        }
+
+        .chart-bar {
+            transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            box-shadow: 0 0 10px currentColor;
+        }
+
+        .chart-bar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 30%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.3), transparent);
+        }
+
+        .chart-label {
+            font-size: 9px;
+            margin-top: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fade-in 0.4s ease-out;
+        }
+
+        .source-link {
+            display: inline-block;
+            margin: 2px 4px;
+            padding: 2px 6px;
+            border: 1px solid #ff00ff;
+            font-size: 9px;
+            transition: all 0.2s;
+        }
+
+        .source-link:hover {
+            background: #ff00ff;
+            color: #000;
+            transform: translateY(-1px);
+        }
+
+        .stat-card {
+            background: rgba(0, 255, 0, 0.05);
+            border: 2px solid #00ff00;
+            padding: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 0, 0.2), transparent);
+            animation: stat-shine 2s infinite;
+        }
+
+        @keyframes stat-shine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #111;
+            border: 2px solid #00ff00;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff00, #ffff00);
+            transition: width 0.6s ease;
+            position: relative;
+            box-shadow: 0 0 10px #00ff00;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: progress-shine 1.5s infinite;
+        }
+
+        @keyframes progress-shine {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .icon-glow {
+            text-shadow: 0 0 10px currentColor;
+            display: inline-block;
+            animation: icon-pulse 2s infinite;
+        }
+
+        @keyframes icon-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .data-stream {
+            font-size: 10px;
+            color: #00ff00;
+            opacity: 0.6;
+            font-family: monospace;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .grid-lines {
+            background-image: 
+                linear-gradient(rgba(0, 255, 0, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 0, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .neon-border {
+            position: relative;
+        }
+
+        .neon-border::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #00ff00, #ffff00, #ff00ff, #00ffff);
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.3s;
+            filter: blur(10px);
+        }
+
+        .neon-border:hover::before {
+            opacity: 0.7;
+            animation: neon-rotate 2s linear infinite;
+        }
+
+        @keyframes neon-rotate {
+            0% { filter: blur(10px) hue-rotate(0deg); }
+            100% { filter: blur(10px) hue-rotate(360deg); }
+        }
+
+        .floating {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .particle {
+            position: fixed;
+            width: 4px;
+            height: 4px;
+            background: #00ff00;
+            pointer-events: none;
+            z-index: 999;
+            opacity: 0;
+        }
+
+        @keyframes particle-rise {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-100px) scale(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="background-canvas"></canvas>
+    <div class="scanlines"></div>
+
+    <div class="container mx-auto p-4 md:p-8 relative z-10">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-6xl mb-4 text-glitch-primary title-glitch floating">
+                GEΞKKARMA
+            </h1>
+            <p class="text-lg md:text-2xl mb-6">[BORGERØKONOMI 2.0]</p>
+            
+            <!-- System Stats Bar -->
+            <div class="max-w-2xl mx-auto mb-6 grid grid-cols-3 gap-4">
+                <div class="stat-card text-center">
+                    <div class="text-2xl text-glitch-primary icon-glow">⚡</div>
+                    <div class="text-xs mt-2">SYSTEM</div>
+                    <div class="text-glitch-accent text-lg">ONLINE</div>
+                </div>
+                <div class="stat-card text-center">
+                    <div class="text-2xl text-glitch-secondary icon-glow">💾</div>
+                    <div class="text-xs mt-2">USERS</div>
+                    <div class="text-glitch-accent text-lg" id="user-count">1337</div>
+                </div>
+                <div class="stat-card text-center">
+                    <div class="text-2xl text-glitch-accent icon-glow">🔐</div>
+                    <div class="text-xs mt-2">SECURITY</div>
+                    <div class="text-glitch-accent text-lg">MAX</div>
+                </div>
+            </div>
+
+            <div class="pixel-frame p-4 max-w-2xl mx-auto min-h-[100px] flex items-center justify-center neon-border">
+                <p id="truth-bomb" class="text-center text-sm md:text-lg text-glitch-accent leading-relaxed"></p>
+            </div>
+            
+            <!-- Data Stream -->
+            <div class="data-stream mt-4" id="data-stream"></div>
+        </header>
+
+        <main class="space-y-12 max-w-6xl mx-auto">
+            <!-- Mindset -->
+            <section class="pixel-frame p-6">
+                <h2 class="text-2xl md:text-3xl mb-4 text-glitch-primary">
+                    <span class="icon-glow">🧠</span> MINDSET & SYSTEMFORSTÅELSE
+                </h2>
+                <div class="progress-bar mb-4">
+                    <div class="progress-fill" style="width: 75%"></div>
+                </div>
+                <p class="text-xs md:text-sm leading-relaxed">
+                    Systemet er ikke designet til din frihed. Det er en maskine. Din opgave er ikke at kæmpe imod maskinen, men at lære dens binære kode. Borgerøkonomi 2.0 handler om at navigere i reglerne, ikke at ignorere dem. Hver linje i Skatteloven er et potentialt <span class="text-glitch-accent">våben</span>, hvis du kan læse koden.
+                </p>
+            </section>
+
+            <!-- Tax Calculator -->
+            <section class="pixel-frame p-6 grid-lines">
+                <h2 class="text-2xl md:text-3xl mb-4 text-glitch-primary">
+                    <span class="icon-glow">💾</span> SKATTEOPTIMERING LAB
+                </h2>
+                <p class="mb-6 text-xs md:text-sm">Se, hvordan fradrag <span class="text-glitch-accent">sletter</span> din skattepligtige indkomst.</p>
+
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block mb-2 text-xs text-glitch-primary">ÅRLIG INDKOMST (DKK)</label>
+                            <input type="number" id="income" value="500000" class="w-full glitch-input neon-border" min="0" step="1000">
+                        </div>
+                        <div>
+                            <label class="block mb-2 text-xs text-glitch-primary">DRIFTSUDGIFTER (DKK)</label>
+                            <input type="number" id="expenses" value="50000" class="w-full glitch-input neon-border" min="0" step="1000">
+                        </div>
+                        <div>
+                            <label class="block mb-2 text-xs text-glitch-primary">ANDRE FRADRAG (DKK)</label>
+                            <input type="number" id="deductions" value="20000" class="w-full glitch-input neon-border" min="0" step="1000">
+                        </div>
+                        <div class="pt-4 border-t-2 border-glitch-primary stat-card">
+                            <p class="text-xs text-glitch-secondary mb-1">OPTIMISERET PROFIT:</p>
+                            <p id="optimized-profit" class="text-2xl text-glitch-accent icon-glow">430.000 DKK</p>
+                            <div class="progress-bar mt-3">
+                                <div class="progress-fill" id="savings-bar" style="width: 86%"></div>
+                            </div>
+                            <p class="text-xs text-glitch-primary mt-2">BESPARELSE: <span id="savings-percent">14%</span></p>
+                        </div>
+                    </div>
+
+                    <div class="bg-glitch-bg border-4 border-glitch-primary p-4 relative overflow-hidden">
+                        <div class="absolute inset-0 grid-lines opacity-20"></div>
+                        <h3 class="text-center text-xs mb-4 text-glitch-primary relative z-10">TAX VISUALIZER</h3>
+                        <div class="flex items-end justify-around h-56 relative z-10">
+                            <div class="flex flex-col items-center w-1/4">
+                                <div class="w-full bg-glitch-primary chart-bar" id="income-bar" style="height: 100%;"></div>
+                                <span class="chart-label text-glitch-text">INDKOMST</span>
+                            </div>
+                            <div class="flex flex-col items-center w-1/4">
+                                <div class="w-full bg-glitch-accent chart-bar" id="taxable-bar" style="height: 86%;"></div>
+                                <span class="chart-label text-glitch-text">SKATTEPLIGTIG</span>
+                            </div>
+                            <div class="flex flex-col items-center w-1/4">
+                                <div class="w-full bg-glitch-secondary opacity-60 chart-bar" id="reduction-bar" style="height: 14%;"></div>
+                                <span class="chart-label text-glitch-secondary">REDUKTION</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- AI Chat -->
+            <section class="pixel-frame p-6">
+                <h2 class="text-2xl md:text-3xl mb-4 text-glitch-primary">
+                    <span class="icon-glow">🤖</span> AJ CHAT // AI MENTOR
+                </h2>
+                <div class="progress-bar mb-4">
+                    <div class="progress-fill" id="ai-status-bar" style="width: 100%"></div>
+                </div>
+                <p class="mb-4 text-xs md:text-sm">AJ er din kyniske AI-mentor. Spørg om danske skatteregler, CVR, eller strategier.</p>
+
+                <div class="border-4 border-glitch-primary bg-glitch-bg flex flex-col h-96 neon-border">
+                    <div id="chat-history" class="flex-grow overflow-y-auto p-3 space-y-2 grid-lines"></div>
+                    <div class="border-t-4 border-glitch-primary p-3 flex gap-2">
+                        <input type="text" id="chat-input" placeholder=">> INDTAST QUERY..." class="flex-grow glitch-input" style="font-size: 11px;">
+                        <button id="send-btn" class="glitch-button neon-border">SEND</button>
+                    </div>
+                </div>
+                <p id="chat-status" class="text-glitch-secondary text-xs mt-2 h-4"></p>
+            </section>
+
+            <!-- Guides -->
+            <section class="pixel-frame p-6">
+                <h2 class="text-2xl md:text-3xl mb-4 text-glitch-primary">
+                    <span class="icon-glow">⚙️</span> VIRKSOMHEDS-FLOW
+                </h2>
+                <div class="grid md:grid-cols-2 gap-8 text-xs">
+                    <div class="stat-card">
+                        <h3 class="text-lg mb-3 text-glitch-accent">CVR START FLOW</h3>
+                        <ul class="space-y-3">
+                            <li class="flex items-start">
+                                <span class="text-glitch-primary mr-2">▸</span> 
+                                <span>VÆLG STRUKTUR (PMV/ApS)</span>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-glitch-primary mr-2">▸</span> 
+                                <span>CVR.DK REGISTRERING</span>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-glitch-primary mr-2">▸</span> 
+                                <span>SKAT.DK AKTIVERING</span>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-glitch-primary mr-2">▸</span> 
+                                <span>BANKKONTO SETUP</span>
+                            </li>
+                        </ul>
+                        <div class="progress-bar mt-4">
+                            <div class="progress-fill" style="width: 25%"></div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <h3 class="text-lg mb-3 text-glitch-accent">OPTIMERINGS HACKS</h3>
+                        <ol class="space-y-3">
+                            <li class="flex items-start">
+                                <span class="text-glitch-secondary mr-2">01.</span> 
+                                <span>Firmabil optimering</span>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-glitch-secondary mr-2">02.</span> 
+                                <span>Skattefri gaver</span>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-glitch-secondary mr-2">03.</span> 
+                                <span>Udbytte vs løn</span>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-glitch-secondary mr-2">04.</span> 
+                                <span>Fradragsliste</span>
+                            </li>
+                        </ol>
+                        <div class="progress-bar mt-4">
+                            <div class="progress-fill" style="width: 60%"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="text-center mt-12 text-xs opacity-60">
+            <div class="data-stream mb-2" id="footer-stream"></div>
+            // GEΞKKARMA v2.1.0 // ENHANCED VISUALS //
+        </footer>
+    </div>
+
+    <script type="module">
+        // Matrix Background
+        const canvas = document.getElementById('background-canvas');
+        const ctx = canvas.getContext('2d');
+        let columns, drops;
+
+        function init() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            columns = Math.floor(canvas.width / 14);
+            drops = Array(columns).fill(1);
+        }
+
+        function draw() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#00ff00';
+            ctx.font = '14px monospace';
+
+            for(let i = 0; i < drops.length; i++) {
+                const text = Math.random() < 0.5 ? '0' : '1';
+                ctx.fillText(text, i * 14, drops[i] * 14);
+                if(drops[i] * 14 > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                drops[i]++;
+            }
+        }
+
+        init();
+        setInterval(draw, 50);
+        window.addEventListener('resize', init);
+
+        // Particle System
+        function createParticle(x, y) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = x + 'px';
+            particle.style.top = y + 'px';
+            particle.style.animation = 'particle-rise 1s ease-out forwards';
+            document.body.appendChild(particle);
+            setTimeout(() => particle.remove(), 1000);
+        }
+
+        document.addEventListener('click', (e) => {
+            for(let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                    createParticle(
+                        e.clientX + (Math.random() - 0.5) * 20,
+                        e.clientY + (Math.random() - 0.5) * 20
+                    );
+                }, i * 50);
+            }
+        });
+
+        // Data Stream Effect
+        function generateDataStream() {
+            const chars = '01';
+            let stream = '';
+            for(let i = 0; i < 100; i++) {
+                stream += chars[Math.floor(Math.random() * chars.length)];
+            }
+            return stream;
+        }
+
+        function updateDataStream() {
+            const streamEl = document.getElementById('data-stream');
+            const footerStreamEl = document.getElementById('footer-stream');
+            streamEl.textContent = '> ' + generateDataStream();
+            footerStreamEl.textContent = '< ' + generateDataStream();
+        }
+
+        setInterval(updateDataStream, 2000);
+        updateDataStream();
+
+        // User Counter Animation
+        let count = 1000;
+        const countEl = document.getElementById('user-count');
+        setInterval(() => {
+            count += Math.floor(Math.random() * 10);
+            countEl.textContent = count;
+        }, 3000);
+
+        // Truth Bombs
+        const bombs = [
+            "REGEL #01: SKAT ER EN FRIVILLIG AFGIFT FOR UVEDENDE.",
+            "PENGE ER KUN EN ILLUSION. EN MEGET BINDENDE ILLUSION.",
+            "ARBEJD FOR FRIHED, IKKE FOR DIN NÆSTE SKATTEREFORM.",
+            "FRADRAG ER DINE VÅBEN. BRUG DEM ELLER BLIV BESKATTET.",
+            "GEAR OP. VÆR IKKE ET PASSIVT DATASET I SYSTEMET.",
+            "DEN STØRSTE GLITCH ER AT TÆNKE, DU ER MAGTESLØS."
+        ];
+        
+        const bombEl = document.getElementById('truth-bomb');
+        let bombIdx = 0;
+
+        function rotateBomb() {
+            bombEl.style.opacity = '0';
+            setTimeout(() => {
+                bombIdx = (bombIdx + 1) % bombs.length;
+                bombEl.textContent = bombs[bombIdx];
+                bombEl.style.opacity = '1';
+            }, 200);
+        }
+
+        bombEl.style.transition = 'opacity 0.2s';
+        bombEl.textContent = bombs[0];
+        setInterval(rotateBomb, 5000);
+
+        // Tax Calculator
+        const inputs = {
+            income: document.getElementById('income'),
+            expenses: document.getElementById('expenses'),
+            deductions: document.getElementById('deductions')
+        };
+        
+        const bars = {
+            income: document.getElementById('income-bar'),
+            taxable: document.getElementById('taxable-bar'),
+            reduction: document.getElementById('reduction-bar')
+        };
+
+        const profitEl = document.getElementById('optimized-profit');
+        const savingsBar = document.getElementById('savings-bar');
+        const savingsPercent = document.getElementById('savings-percent');
+
+        function updateCalc() {
+            const income = parseFloat(inputs.income.value) || 0;
+            const expenses = parseFloat(inputs.expenses.value) || 0;
+            const deductions = parseFloat(inputs.deductions.value) || 0;
+            const total = expenses + deductions;
+            const taxable = Math.max(0, income - total);
+            const reduction = Math.min(total, income);
+
+            profitEl.textContent = `${taxable.toLocaleString('da-DK')} DKK`;
+
+            if (income > 0) {
+                const taxablePercent = (taxable / income) * 100;
+                const reductionPercent = (reduction / income) * 100;
+                
+                bars.taxable.style.height = `${taxablePercent}%`;
+                bars.reduction.style.height = `${reductionPercent}%`;
+                savingsBar.style.width = `${taxablePercent}%`;
+                savingsPercent.textContent = `${reductionPercent.toFixed(1)}%`;
+            } else {
+                bars.taxable.style.height = '0%';
